@@ -5,13 +5,11 @@ specialisation. The report summarizes the solution of the Continuous Control pro
 
 ## Results
 
-The environment was solved in 30 episodes, however at this point, the agent was
-still improving its policy. At 70 episodes a stable maximum of about 36 points
-were achieved.
-
-The averaged agent scores for each episode (averaged over the 20 parallel arms)
-is shown in blue. The rolling average for the previous 100 episodes is the red
-line, and the dashed green line is the target/solvbed score. 
+The environment was solved in 8015 episodes. It took quite a while for the
+agents to actually figure out how to pass the ball to the other side, and even
+longer for them to learn how to cooporate. Furthermore, the agents had a slight
+regression around 6500 episodes where the average score had a bump down.
+Fortunately it was possible to recover. 
 
 ![Scores](scores.png)
 
@@ -20,38 +18,38 @@ line, and the dashed green line is the target/solvbed score.
 The learning algorithm used is DDPG (Deep Deterministic Policy Gradient) [1]
 with soft-update and an un-prioritized experience replay buffer. This fairly
 simple algorithm is an improvement over DQN, when working with continuous
-action spaces.
+action spaces. In this case a single Actor and Critic operates on both ratchets
+simultaneously. The algorithm used does not incorporate multi-agent
+improvements to the DDPG algorithm. 
 
 
 ### Hyper-parameters
 
-It took some effort to find a set of working hyper-parameters. However, that
-could've been because of a few bugs in my code at that time. The following
-parameters seem to work well, and provide robust training, when using the 20
-agents environment:
+It took some effort to find a set of working hyper-parameters, however, it
+actually turned out, that it worked without much tuning.
 
-	Buffer_size = 2e5
-	batch_size = 64
+	Buffer_size = 5e5
+	batch_size = 32
 	gamma = 0.99
-	tau = 1e-3
+	tau = 5e-4
 	actor_lr = 1e-4
-	critic_lr = 1e-3
+	critic_lr = 4e-4
 
 On top of that there are 2 parameters which control when a learning step is performed, 
 
-	network_optimize_every_n_step = 16
-	learn_iterations = 16
+	network_optimize_every_n_step = 4
+	learn_iterations = 2
 
-This set when learning is initiated (every 16 steps), and how many times
-learning is done (16 times). This could of course have been set to 1 each, to
+This set when learning is initiated (every 4 steps), and how many times
+learning is done (2 times). This could of course have been set to 1 each, to
 just run 1 learning iteration every step, but these parameters were changed
 multiple times during optimizations.
 
 #### Noise
 
 Finally, after obtaining the action from the critic we add some noise. This
-noise has is provided from white (gaussian) noise with a decaying scale. THe
-initial noise scale is 0.5 and decays with 0.8 after each episode. It has been
+noise has is provided from white (gaussian) noise with a decaying scale. The
+initial noise scale is 0.5 and decays with 0.999 after each episode. It has been
 shown in other work, that gaussian noise works just fine when compared to
 Ornstein-Uhlenbeck noise [2]
 
@@ -59,7 +57,9 @@ Ornstein-Uhlenbeck noise [2]
 
 #### General architecture
 
-The neural networks used are fully connected networks with N hidden layers (build from a list of hidden layer sizes). Each hidden layer is connected to the input layer neurons, e.g.:
+The neural networks used are fully connected networks with N hidden layers
+(build from a list of hidden layer sizes). Each hidden layer is connected to
+the input layer neurons, e.g.:
 
 	Input(state)  ---> Layer1 --> Layer 2  ----> Layer 3 ...  Layer N---> Output(action)
 	    \   \___________________/               /             /
@@ -75,38 +75,33 @@ gradients, and aids in training a deeper neural network effeciently.
 
 #### Actor
 
-The actor has 2 hidden layers with 256 and 128 neurons (both hidden layers
-connected to input state). All layers (except the output) uses the RELu activation
+The actor has 3 hidden layers with 64, 32 and 32 neurons (both hidden layers
+connected to input state). All layers (except the output) uses the leaky_relu activation
 function. The output neurons are piped through a hypberbolic tangent activation
 function.
 
 #### Critic
 
 The critic has 2 inputs, the state and the action. Both are concatenated as a
-single input to the first layer. The network has 3 hidden layers all connected
-to the inputs. The hidden layers have 256, 256 and 128 neurons which use the
-leaky relu activation function. I am not convinced that it was this change that
-made the difference (i.e. ensured that the environment was solved). But it was
-not thoroughly investigated. The output activation function is a RELu function,
-because we can only have positive rewards
+single input to the first layer. The network has 4 hidden layers all connected
+to the inputs. The hidden layers have 128, 64, 64 and 32 neurons which use the
+leaky relu activation function. There are no activation function on the output neuron.
 
 ## Future Work
 
 This uses the most simple DDPG algorithm without any optimizations or extensions. 
 
-DDPG is an off-policy algorithm, which means that a replay buffer is useful. It
-also means that cause-and-effect is not as easily learned through multiple
-steps. Here we use a 1-step bootstrap (Temporal-difference loss). For an
-on-policy method, like A3C or A2C it would've been possible to record longer
-trajectories, and more accurately record the expected return. 
+It would be beneficial to implement prioritized experience replay, in order for
+us to start learning faster (learning/cooporation only really kicks in after
+5000 episodes. 
 
-In this solution I used the 20 agents environment as a way to sample 20 actions
-at the same time from the same actor, this would also have been possible with
-A2C, so I would probably have started with that algorithm for an on-policy
-agent.
+But most importantly, a real cooporative algorithm, like MADDPG [3] should be
+attempted, such that the cricic actually takes all agents into consideration.
 
 # References
 
 [1] Lillicrap, T. P. et al. Continuous control with deep reinforcement learning. arXiv:1509.02971v6
 
 [2] Fujimoto, S. et al. Addressing Function Approximation Error in Actor-Critic Methods. arXiv:1802.09477v3
+
+[3] Lowe, R. et al. Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments.  arXiv:1706.02275v4
