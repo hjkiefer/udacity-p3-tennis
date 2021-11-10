@@ -7,8 +7,8 @@ specialisation. The report summarizes the solution of the Tennis project.
 
 The environment was solved in 8015 episodes. It took quite a while for the
 agents to actually figure out how to pass the ball to the other side, and even
-longer for them to learn how to cooporate. Furthermore, the agents had a slight
-regression around 6500 episodes where the average score had a bump down.
+longer for them to learn how to cooporate. Furthermore, the agents had slight
+regressions around 6800 and 7600 episodes where the average score had a bump down.
 Fortunately it was possible to recover. 
 
 ![Scores](scores.png)
