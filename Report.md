@@ -1,4 +1,4 @@
-# Project 2: Continuous Control
+# Project 3: Tennis
 
 This is the report for the second project in Udacity Deep Learning
 specialisation. The report summarizes the solution of the Continuous Control project.
